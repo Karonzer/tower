@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="application/octet-stream; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>기초학력진단</title>
+    <link rel="stylesheet" href="TemplateData/style.css">
+</head>
+<body>
+    <div class="safe-area">
+        <div id="unity-container" class="unity-desktop">
+            <canvas id="unity-canvas"></canvas>
+            <div id="LoadingWindow">
+                <img id="LoadingBG" src="TemplateData/title.png" />
+
+                <div id="LoadingBG">
+                    <div id="LoadingBarContainer">
+                        <div id="LoadingBarBackground">
+                            <div id="LoadingText">로딩 중..</div>
+                            <div id="bar" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+        <script>
+        var buildUrl = "Build";
+        var loaderUrl = buildUrl + "/tower.loader.js";
+        var config = {
+            dataUrl: buildUrl + "/tower.data",
+            frameworkUrl: buildUrl + "/tower.framework.js",
+            codeUrl: buildUrl + "/tower.wasm",
+            streamingAssetsUrl: "StreamingAssets",
+            companyName: "",
+            productName: "",
+            productVersion: "0.0.1",
+        };
+
+
+        var canvas = document.querySelector("#unity-canvas");
+        var script = document.createElement("script");
+
+        var loading = document.querySelector("#LoadingWindow");
+        var bar = document.querySelector('#bar');
+
+        var unityInstance = null;
+        function progressFun(per) {
+            bar.style.width = parseInt(100 * per) + '%';
+        }
+
+        config.matchWebGLToCanvasSize = true;
+        script.src = loaderUrl;
+        script.onload = () => {
+            createUnityInstance(canvas, config, (progress) => {
+                progressFun(progress);
+          }).then((instance) => {
+              unityInstance = instance;
+              loading.classList.add("fade-out");
+              setTimeout(() => {
+                  loading.style.display = "none";
+              }, 500); // transition 시간과 동일하게 맞춤 (0.5초)
+          }).catch((message) => {
+            alert(message);
+          });
+        };
+
+        // 페이지 가시성 변경 시 호출되는 함수
+        function handleVisibilityChange() {
+            if (document.hidden) {
+                // 페이지가 비활성화된 경우, 유니티 오디오 정지
+                if (unityInstance) {
+                    unityInstance.SendMessage('Sound', 'PauseAllSounds');
+                }
+                console.log("안봄:");
+            }
+            else {
+                // 페이지가 활성화된 경우, 유니티 오디오 재생
+                if (unityInstance) {
+                    unityInstance.SendMessage('Sound', 'ResumeAllSounds');
+                }
+                console.log("봄:");
+            }
+        }
+        document.addEventListener('visibilitychange', handleVisibilityChange, false);
+
+        // Unity WebGL 콘텐츠 영역이 포커스를 잃을 때 호출되는 함수
+        function handleCanvasBlur() {
+            if (unityInstance) {
+                unityInstance.SendMessage('Sound', 'PauseAllSounds');
+            }
+            console.log("Unity WebGL 콘텐츠 포커스 아웃");
+        }
+        // Unity WebGL 콘텐츠 영역이 포커스를 얻을 때 호출되는 함수
+        function handleCanvasFocus() {
+            if (unityInstance) {
+                unityInstance.SendMessage('Sound', 'ResumeAllSounds');
+            }
+            console.log("Unity WebGL 콘텐츠 포커스 인");
+        }
+
+        // 포커스 이벤트 리스너 추가
+        canvas.setAttribute('tabindex', '0'); // 포커스 이벤트를 받을 수 있도록 tabindex 설정
+        canvas.addEventListener('blur', handleCanvasBlur, false);
+        canvas.addEventListener('focus', handleCanvasFocus, false);
+
+        document.body.appendChild(script);
+        </script>
+</body>
+</html>
